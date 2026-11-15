@@ -1,0 +1,819 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Суфлёр 9:16 Studio</title>
+<style>
+  :root {
+    --bg: #111522;
+    --panel: #171c2c;
+    --panel-border: rgba(255, 255, 255, 0.11);
+    --card: rgba(255, 255, 255, 0.045);
+    --card-border: rgba(255, 255, 255, 0.09);
+    --text: #f8fafc;
+    --dim: #9aa6bf;
+    --accent: #fbbf24;
+    --accent-glow: rgba(251, 191, 36, 0.32);
+    --sky: #38bdf8;
+    --rec: #f43f5e;
+    --rec-glow: rgba(244, 63, 94, 0.38);
+    --ok: #34d399;
+    --pw: 520px;
+    --fs: 40px;
+    --ph: 34vh;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    margin: 0; height: 100%; width: 100%;
+    background:
+      radial-gradient(ellipse 70% 45% at 50% 0%, rgba(251, 191, 36, 0.08), transparent 70%),
+      radial-gradient(ellipse 60% 50% at 85% 95%, rgba(56, 189, 248, 0.08), transparent 65%),
+      var(--bg);
+    color: var(--text);
+    font: 13px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
+    overflow: hidden; user-select: none; -webkit-user-select: none;
+    -webkit-font-smoothing: antialiased;
+    display: flex;
+  }
+
+  button, select, input, textarea { font: inherit; color: inherit; outline: none; }
+
+  /* Buttons */
+  button {
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid var(--panel-border);
+    border-radius: 8px; padding: 6px 11px;
+    font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s ease;
+  }
+  button:hover { background: rgba(255, 255, 255, 0.13); border-color: rgba(255, 255, 255, 0.16); }
+  button:active { transform: scale(0.97); }
+
+  button.primary {
+    background: linear-gradient(180deg, #fbbf24 0%, #f59e0b 100%);
+    color: #0b0c10; border-color: #f59e0b;
+    font-weight: 700; box-shadow: 0 4px 14px var(--accent-glow);
+  }
+  button.primary:hover {
+    background: linear-gradient(180deg, #fcd34d 0%, #fbbf24 100%);
+    box-shadow: 0 6px 18px rgba(245, 158, 11, 0.5);
+  }
+
+  button.btn-folder {
+    background: rgba(59, 130, 246, 0.15);
+    border-color: rgba(59, 130, 246, 0.35);
+    color: #93c5fd;
+  }
+  button.btn-folder:hover {
+    background: rgba(59, 130, 246, 0.25);
+    border-color: #60a5fa;
+  }
+
+  button.btn-rec-save {
+    background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+    color: #fff; border-color: #ef4444;
+    font-weight: 700; box-shadow: 0 4px 14px var(--rec-glow);
+  }
+  button.btn-rec-save:hover {
+    background: linear-gradient(180deg, #f87171 0%, #ef4444 100%);
+  }
+  button.btn-rec-discard {
+    background: rgba(239, 68, 68, 0.12);
+    border-color: rgba(239, 68, 68, 0.35);
+    color: #fca5a5;
+  }
+  button.btn-rec-discard:hover {
+    background: rgba(239, 68, 68, 0.22);
+    border-color: #ef4444;
+  }
+  .btn-icon {
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-icon svg { width: 14px; height: 14px; flex: none; }
+
+  /* Form Elements */
+  select, input[type=text], textarea {
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid var(--panel-border);
+    border-radius: 8px; padding: 7px 10px;
+    font-size: 12px; width: 100%;
+    transition: border-color 0.15s;
+  }
+  select:focus, input[type=text]:focus, textarea:focus {
+    border-color: var(--accent);
+  }
+
+  label {
+    display: block; color: var(--dim);
+    font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    margin: 10px 0 4px;
+  }
+
+  input[type=range] {
+    width: 100%; height: 5px;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+
+  kbd {
+    background: #181a24;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-bottom: 2px solid rgba(255, 255, 255, 0.18);
+    border-radius: 5px; padding: 1px 5px;
+    font-size: 10px; font-weight: 700;
+    color: #e2e8f0; font-family: ui-monospace, Menlo, monospace;
+  }
+
+  /* ===== Центр (Суфлёр + Превью + Кнопки) ===== */
+  #center-col {
+    flex: 1 1 auto; min-width: 260px; height: 100%;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 0 12px 10px; gap: 10px;
+    overflow: hidden; position: relative;
+  }
+
+  /* ===== Суфлёр (The Eye-Contact Prompter) ===== */
+  #prompter {
+    position: relative; flex: none;
+    width: min(var(--pw), 100%); height: var(--ph);
+    overflow: hidden; background: rgba(5, 6, 10, 0.94);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    border-radius: 0 0 18px 18px; z-index: 5;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: 0 16px 50px rgba(0, 0, 0, 0.85);
+    -webkit-mask-image: linear-gradient(#000 0, #000 74%, transparent 100%);
+    mask-image: linear-gradient(#000 0, #000 74%, transparent 100%);
+    transition: width 0.2s, height 0.2s, border-color 0.25s;
+  }
+  body.recording #prompter {
+    border-bottom-color: rgba(239, 68, 68, 0.6);
+    box-shadow: 0 16px 50px rgba(239, 68, 68, 0.22);
+  }
+  #prompter.flip #track { transform: scaleX(-1); }
+
+  .prompter-camera-indicator {
+    position: absolute; top: 0; left: 0; right: 0;
+    text-align: center; font-size: 9px; font-weight: 800;
+    letter-spacing: 1.6px; color: #facc15;
+    background: rgba(250, 204, 21, 0.12);
+    padding: 3px 0; border-bottom: 1px solid rgba(250, 204, 21, 0.2);
+    z-index: 10;
+  }
+
+  #track { position: absolute; left: 0; right: 0; top: 0; padding: 20px 22px 0 22px; }
+  #scroller { position: relative; will-change: transform; }
+  #scroller p {
+    margin: 0 0 0.55em; font-size: var(--fs);
+    line-height: 1.25; font-weight: 700;
+    letter-spacing: -0.015em; text-align: center;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9);
+  }
+  #scroller p.gap { height: 0.6em; margin: 0; }
+  #scroller p.note {
+    font-size: calc(var(--fs) * 0.55); color: var(--accent);
+    font-weight: 600; font-style: italic; cursor: pointer;
+  }
+  #scroller .w {
+    cursor: pointer; transition: color 0.15s, opacity 0.25s;
+    border-radius: 6px; padding: 1px 2px;
+  }
+  #scroller .w:hover { background: rgba(255, 255, 255, 0.12); }
+  #scroller .w.read { opacity: 0.32; }
+  #scroller .w.cur {
+    color: #fef08a; text-shadow: 0 0 14px rgba(254, 240, 138, 0.6);
+  }
+  #scroller .end {
+    color: var(--dim); font-size: calc(var(--fs) * 0.5);
+    text-align: center; padding-top: 1.2em; font-weight: 600;
+  }
+
+  #readline {
+    position: absolute; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent) 15%, var(--accent) 85%, transparent);
+    opacity: 0.45; pointer-events: none; z-index: 2;
+  }
+  #readline::before, #readline::after {
+    content: ""; position: absolute; top: -6px;
+    border: 7px solid transparent;
+  }
+  #readline::before { left: 4px; border-left-color: var(--accent); }
+  #readline::after { right: 4px; border-right-color: var(--accent); }
+
+  #progress {
+    position: absolute; left: 0; bottom: 0; height: 3px;
+    width: 0; background: var(--accent); opacity: 0.85; z-index: 3;
+    box-shadow: 0 0 8px var(--accent);
+  }
+
+  /* ===== Превью 9:16 (Center Stage) ===== */
+  #stage-wrap {
+    flex: 1 1 0; min-height: 0; width: 100%;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #stage {
+    position: relative;
+    height: 100%; max-height: 100%; max-width: 100%;
+    aspect-ratio: 9 / 16;
+    border-radius: 18px; overflow: hidden;
+    background: #000; border: 2px solid var(--panel-border);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+    transition: border-color 0.25s, box-shadow 0.25s;
+  }
+  body.recording #stage {
+    border-color: var(--rec);
+    box-shadow: 0 0 0 4px var(--rec-glow), 0 20px 60px rgba(0, 0, 0, 0.85);
+  }
+  #stage video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  #stage.mirror video { transform: scaleX(-1); }
+
+  #stage .grid {
+    position: absolute; inset: 0; pointer-events: none; display: none;
+    background:
+      linear-gradient(90deg, transparent 33.2%, rgba(255,255,255,0.18) 33.3%, transparent 33.4%, transparent 66.6%, rgba(255,255,255,0.18) 66.7%, transparent 66.8%),
+      linear-gradient(transparent 33.2%, rgba(255,255,255,0.18) 33.3%, transparent 33.4%, transparent 66.6%, rgba(255,255,255,0.18) 66.7%, transparent 66.8%);
+  }
+  #stage.showgrid .grid { display: block; }
+
+  /* TikTok / Reels Safe Zones */
+  #safe-zones {
+    position: absolute; inset: 0; pointer-events: none; display: none;
+  }
+  #stage.showsafe #safe-zones { display: block; }
+  .sz-right {
+    position: absolute; right: 10px; bottom: 70px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .sz-icon {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: rgba(255, 255, 255, 0.16);
+    border: 1px dashed rgba(255, 255, 255, 0.4);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; color: #fff;
+  }
+  .sz-bottom {
+    position: absolute; left: 8px; right: 54px; bottom: 8px;
+    height: 52px; border: 1px dashed rgba(255, 255, 255, 0.35);
+    border-radius: 6px; background: rgba(0, 0, 0, 0.28);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 700; color: rgba(255, 255, 255, 0.65);
+    text-align: center;
+  }
+
+  /* HUD */
+  #hud {
+    position: absolute; top: 10px; left: 10px; right: 10px;
+    display: flex; align-items: center; gap: 8px;
+    font-weight: 700; font-variant-numeric: tabular-nums; font-size: 12px;
+    z-index: 4;
+  }
+  #recdot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: #475569; flex: none; transition: background 0.2s;
+  }
+  body.recording #recdot {
+    background: var(--rec); animation: blink 1s infinite;
+  }
+  @keyframes blink { 50% { opacity: 0.25; } }
+
+  #meter {
+    flex: 1; height: 6px; background: rgba(0, 0, 0, 0.55);
+    border-radius: 999px; overflow: hidden;
+  }
+  #meter i {
+    display: block; height: 100%; width: 0;
+    background: linear-gradient(90deg, var(--ok) 65%, var(--accent) 85%, var(--rec));
+    transition: width 0.05s linear;
+  }
+  #voice {
+    font-size: 10px; font-weight: 800; text-transform: uppercase;
+    padding: 2px 6px; border-radius: 6px;
+    background: rgba(0, 0, 0, 0.6); color: var(--dim);
+  }
+  #voice.on { color: #0b0c10; background: var(--ok); }
+  #left-time { color: var(--dim); font-size: 11px; }
+  #ear { opacity: 0.35; filter: grayscale(1); font-size: 13px; }
+  #ear.on { opacity: 1; filter: none; }
+
+  #count {
+    position: absolute; inset: 0; display: none;
+    align-items: center; justify-content: center;
+    font-size: 140px; font-weight: 900; color: #facc15;
+    background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(4px);
+    text-shadow: 0 8px 30px rgba(0, 0, 0, 0.9); z-index: 6;
+  }
+  #ask {
+    position: absolute; inset: 0; display: none;
+    flex-direction: column; align-items: center; justify-content: center;
+    gap: 12px; text-align: center;
+    background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px);
+    padding: 20px; z-index: 7;
+  }
+  #toast {
+    position: absolute; bottom: 12px; left: 14px; right: 14px;
+    text-align: center; background: rgba(15, 23, 42, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 10px; padding: 8px 12px; font-size: 12px;
+    font-weight: 600; display: none; z-index: 8;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+  }
+  #camerr {
+    position: absolute; inset: 0; display: none;
+    align-items: center; justify-content: center;
+    text-align: center; padding: 20px; color: #fca5a5;
+    font-weight: 600; font-size: 12px;
+  }
+
+  /* Center Bottom Transport Bar */
+  #center-transport {
+    flex: none; width: 100%;
+    display: flex; align-items: center; justify-content: center;
+    gap: 6px; flex-wrap: wrap; z-index: 6;
+  }
+  #btnStopSave, #btnStopDiscard { display: none; }
+  body.recording #btnStopSave, body.recording #btnStopDiscard { display: inline-flex; }
+  body.recording #btnRehearse { display: none; }
+
+  /* ===== Панели (Sidebars) ===== */
+  .side {
+    flex: 0 0 clamp(220px, 24vw, 300px); height: 100%;
+    background: var(--panel); border-color: var(--panel-border);
+    padding: 12px 14px; overflow-y: auto; overflow-x: hidden;
+    z-index: 4; transition: opacity 0.25s ease;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  #left { border-right: 1px solid var(--panel-border); padding-top: 14px; }
+  #right { border-left: 1px solid var(--panel-border); padding-top: 14px; }
+  .hideui .side { display: none; }
+  body.recording .side { opacity: 0.25; pointer-events: none; }
+
+  h2 {
+    font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--dim);
+    margin: 2px 0; font-weight: 800;
+  }
+
+  /* Drag & Drop Zone */
+  .dropzone {
+    border: 2px dashed rgba(245, 158, 11, 0.4);
+    background: rgba(245, 158, 11, 0.05);
+    border-radius: 10px; padding: 8px 10px;
+    cursor: pointer; text-align: center;
+    transition: all 0.2s ease;
+  }
+  .dropzone:hover, .dropzone.dragover {
+    border-color: #facc15;
+    background: rgba(245, 158, 11, 0.14);
+    transform: scale(1.01);
+  }
+  .dropzone-icon { font-size: 16px; margin-bottom: 2px; }
+  .dropzone-title { font-size: 11px; font-weight: 700; color: #fff; }
+  .dropzone-sub { font-size: 9px; color: var(--dim); }
+
+  /* In-line Quick Editor */
+  .inline-editor {
+    background: var(--card); border: 1px solid var(--card-border);
+    border-radius: 10px; padding: 9px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .editor-actions-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 4px;
+  }
+  .editor-actions-row button {
+    padding: 4px 8px; font-size: 11px;
+  }
+  #edInlineText {
+    height: 80px; resize: vertical;
+    font-size: 12px; line-height: 1.45;
+  }
+
+  /* Collapsible Telegram Post */
+  .tg-collapsible {
+    border: 1px solid var(--card-border);
+    border-radius: 8px; overflow: hidden; background: rgba(0, 0, 0, 0.2);
+  }
+  .tg-summary {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 5px 8px; font-size: 10px; font-weight: 700;
+    color: var(--dim); cursor: pointer; text-transform: uppercase;
+  }
+  .tg-body {
+    padding: 6px 8px 8px; border-top: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  #edInlineTg {
+    height: 60px; font-size: 11px; line-height: 1.4; color: #cbd5e1;
+  }
+
+  /* Scenarios List (Lowered Down) */
+  .scenarios-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: 6px; border-top: 1px solid var(--panel-border);
+  }
+  .badge {
+    background: rgba(245, 158, 11, 0.18); color: #fde68a;
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    font-size: 10px; font-weight: 800; padding: 1px 6px; border-radius: 999px;
+  }
+  #searchScripts {
+    padding: 6px 8px; font-size: 11px;
+  }
+  .list {
+    display: flex; flex-direction: column; gap: 4px;
+    flex: 1; min-height: 90px; max-height: 190px;
+    overflow-y: auto; padding-right: 2px;
+  }
+  .item {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 8px; border-radius: 8px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--card-border);
+    cursor: pointer; font-size: 12px; font-weight: 600;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .item-title {
+    flex: 1; min-width: 0;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .item-del {
+    flex: none; opacity: 0; background: transparent; border: 0;
+    color: var(--dim); padding: 2px 4px; border-radius: 5px;
+    font-size: 11px; line-height: 1;
+  }
+  .item:hover .item-del, .item.active .item-del { opacity: 0.75; }
+  .item-del:hover { opacity: 1 !important; color: #fca5a5; background: rgba(239, 68, 68, 0.18); }
+  .item:hover { background: rgba(255, 255, 255, 0.07); }
+  .item.active {
+    border-color: var(--accent); background: rgba(245, 158, 11, 0.14);
+    color: #fff;
+  }
+
+  /* Collapsible Sections */
+  details.sec-details {
+    border: 1px solid var(--card-border);
+    border-radius: 10px; background: var(--card);
+    overflow: hidden;
+  }
+  details.sec-details > summary {
+    list-style: none; cursor: pointer;
+    padding: 8px 10px; font-size: 11px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.06em; color: var(--dim);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  details.sec-details > summary::-webkit-details-marker { display: none; }
+  details.sec-details > summary::after { content: "▾"; font-size: 11px; opacity: 0.7; transition: transform 0.15s; }
+  details.sec-details[open] > summary::after { transform: rotate(180deg); }
+  details.sec-details .sec-body { padding: 2px 10px 10px; }
+
+  .presets { display: flex; gap: 4px; margin-top: 6px; }
+  .presets button { flex: 1; padding: 5px 4px; font-size: 11px; }
+
+  /* Hotkeys Card */
+  .keys-card {
+    background: var(--card); border: 1px solid var(--card-border);
+    border-radius: 10px; padding: 8px 10px;
+    font-size: 11px; line-height: 1.75; color: var(--dim);
+  }
+
+  /* Right Panel: Segmented Modes */
+  .seg {
+    display: flex; background: rgba(0, 0, 0, 0.45);
+    border: 1px solid var(--panel-border); border-radius: 10px;
+    padding: 2px; gap: 2px;
+  }
+  .seg button {
+    flex: 1; border: 0; background: transparent;
+    padding: 6px 4px; font-size: 11px; font-weight: 600;
+    border-radius: 8px; color: var(--dim);
+  }
+  .seg button.on {
+    background: var(--accent); color: #0b0c10; font-weight: 700;
+    box-shadow: 0 2px 8px var(--accent-glow);
+  }
+
+  .hint { color: var(--dim); font-size: 11px; line-height: 1.4; }
+  .val { color: var(--text); float: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .row { display: flex; gap: 6px; align-items: center; }
+  .row > * { flex: 1; }
+
+  /* Modern Toggles */
+  .chk {
+    display: flex; gap: 8px; align-items: center;
+    color: var(--text); font-size: 12px; font-weight: 500;
+    margin: 5px 0; cursor: pointer;
+  }
+  .chk input { accent-color: var(--accent); }
+
+  /* Takes Section */
+  .dir-pill {
+    background: rgba(0, 0, 0, 0.35); border: 1px solid var(--panel-border);
+    border-radius: 7px; padding: 5px 8px; font-size: 10px;
+    color: #93c5fd; font-family: ui-monospace, Menlo, monospace;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    cursor: pointer; transition: background 0.15s;
+  }
+  .dir-pill:hover { background: rgba(59, 130, 246, 0.15); border-color: #60a5fa; }
+
+  .take {
+    background: var(--card); border: 1px solid var(--card-border);
+    border-radius: 8px; padding: 8px; margin-bottom: 6px; font-size: 11px;
+  }
+  .take .n { word-break: break-all; margin-bottom: 5px; font-weight: 600; }
+  .take.err { border-color: var(--rec); }
+
+  #qr { background: #fff; border-radius: 10px; padding: 8px; margin-top: 8px; display: none; }
+  #qr svg { display: block; width: 100%; height: auto; }
+  #qrUrl { font-size: 10px; color: var(--dim); word-break: break-all; margin-top: 4px; user-select: text; -webkit-user-select: text; }
+
+  /* Onboarding Modal */
+  #onboarding {
+    position: fixed; inset: 0;
+    background: rgba(11, 14, 24, 0.78);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    display: none; align-items: center; justify-content: center;
+    z-index: 40; padding: 20px;
+  }
+  #onboarding .ob-box {
+    width: min(600px, 94vw);
+    background: linear-gradient(180deg, #1d2336 0%, #161b2a 100%);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 20px; padding: 24px;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.75);
+    display: flex; flex-direction: column; gap: 16px;
+  }
+  .ob-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .ob-title { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; }
+  .ob-sub { font-size: 13px; color: var(--dim); margin-top: 2px; }
+  .ob-steps { display: flex; flex-direction: column; gap: 10px; }
+  .ob-step {
+    display: flex; gap: 12px; align-items: flex-start;
+    background: rgba(255, 255, 255, 0.045);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px; padding: 12px 14px;
+  }
+  .ob-num {
+    width: 26px; height: 26px; border-radius: 8px; flex: none;
+    background: rgba(251, 191, 36, 0.16); color: var(--accent);
+    border: 1px solid rgba(251, 191, 36, 0.35);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 13px;
+  }
+  .ob-step-title { font-size: 13px; font-weight: 700; margin-bottom: 2px; color: #fff; }
+  .ob-step-desc { font-size: 12px; color: var(--dim); line-height: 1.45; }
+  .ob-foot { display: flex; gap: 10px; justify-content: flex-end; align-items: center; margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<!-- LEFT PANEL: SCRIPT EDITOR & SCENARIOS -->
+<aside id="left" class="side">
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;">
+    <h2 style="white-space:nowrap;">Текст суфлёра</h2>
+    <div style="display:flex;gap:4px;">
+      <button id="btnNewInline" style="font-size:11px;padding:4px 8px;">+ Новый</button>
+      <button class="primary" id="btnSaveInline" style="font-size:11px;padding:4px 9px;">Сохранить</button>
+    </div>
+  </div>
+
+  <!-- DRAG & DROP FILE ZONE -->
+  <div id="dropZone" class="dropzone" title="Перетащите сюда файл .txt или .md или нажмите для выбора">
+    <input type="file" id="fileInput" accept=".txt,.md" style="display:none">
+    <div class="dropzone-title">Перетащи файл .txt / .md</div>
+    <div class="dropzone-sub">или нажми, чтобы выбрать с диска</div>
+  </div>
+
+  <!-- INLINE EDITOR -->
+  <div class="inline-editor">
+    <input type="text" id="edInlineName" placeholder="Название сценария">
+    <div class="editor-actions-row">
+      <span style="font-size:10px;font-weight:700;color:var(--dim);text-transform:uppercase;">Строки текста:</span>
+      <button id="btnAutoChunk" style="font-size:10px;padding:2px 6px;" title="Разбить предложения на фразы по 3-5 слов">Разбить на строки</button>
+    </div>
+    <textarea id="edInlineText" placeholder="Вставь или напиши текст... Каждая строка читается под камерой."></textarea>
+  </div>
+
+  <!-- SCENARIOS SECTION (LOWERED DOWN) -->
+  <div class="scenarios-header">
+    <h2>Сценарии</h2>
+    <span class="badge" id="scriptsCountBadge">1</span>
+  </div>
+  <input type="text" id="searchScripts" placeholder="Поиск по сценариям...">
+  <div class="list" id="scripts"></div>
+
+  <!-- HOTKEYS CHEAT SHEET (COLLAPSIBLE) -->
+  <details class="sec-details">
+    <summary>Горячие клавиши</summary>
+    <div class="sec-body">
+      <div class="keys-card" style="border:0;background:transparent;padding:4px 0 0;">
+        <kbd>Пробел</kbd> старт / пауза скролла<br>
+        <kbd>Enter</kbd> стоп и сохранить дубль<br>
+        <kbd>Esc</kbd> стоп без сохранения<br>
+        <kbd>M</kbd> режим: скорость / голос / слова<br>
+        <kbd>↑</kbd><kbd>↓</kbd> скорость скролла<br>
+        <kbd>+</kbd><kbd>−</kbd> размер шрифта<br>
+        <kbd>Home</kbd> в начало текста<br>
+        <kbd>G</kbd> зоны Reels / TikTok<br>
+        <kbd>H</kbd> скрыть панели для чистого вида<br>
+        <kbd>F</kbd> полный экран
+      </div>
+    </div>
+  </details>
+</aside>
+
+<!-- CENTER COLUMN: PROMPTER + 9:16 STAGE + TRANSPORT -->
+<main id="center-col">
+  <!-- TOP NOTCH EYE-CONTACT PROMPTER -->
+  <div id="prompter">
+    <div class="prompter-camera-indicator">▲ КАМЕРА ЗДЕСЬ (СМОТРИ В ОБЪЕКТИВ) ▲</div>
+    <div id="track"><div id="scroller"></div></div>
+    <div id="readline"></div>
+    <div id="progress"></div>
+  </div>
+
+  <!-- 9:16 PREVIEW & CAMERA STAGE -->
+  <div id="stage-wrap">
+    <div id="stage" class="mirror">
+      <video id="video" autoplay muted playsinline></video>
+      <div class="grid"></div>
+
+      <!-- TikTok / Reels Safe Zones Overlay -->
+      <div id="safe-zones">
+        <div class="sz-right">
+          <div class="sz-icon">❤</div>
+          <div class="sz-icon">💬</div>
+          <div class="sz-icon">↗</div>
+          <div class="sz-icon">🎵</div>
+        </div>
+        <div class="sz-bottom">Зона субтитров и описания Reels / TikTok</div>
+      </div>
+
+      <div id="hud">
+        <div id="recdot"></div>
+        <span id="timer">00:00</span>
+        <span id="left-time"></span>
+        <div id="meter"><i></i></div>
+        <span id="voice"></span>
+        <span id="ear" title="Слушаю голосовые команды">🎙</span>
+      </div>
+
+      <div id="count"></div>
+
+      <div id="ask">
+        <div style="font-size: 20px; font-weight: 800;">Сохранить дубль?</div>
+        <div class="hint" style="font-size: 13px;">Скажи «сохранить» или «в корзину».<br>Через <b id="askLeft" style="color:#facc15">20</b> с сохраню сам.</div>
+        <div class="row" style="width: 80%; margin-top: 6px;">
+          <button class="primary" id="askSave">Сохранить</button>
+          <button id="askTrash">В корзину</button>
+        </div>
+      </div>
+
+      <div id="toast"></div>
+      <div id="camerr"></div>
+    </div>
+  </div>
+
+  <!-- CENTER BOTTOM TRANSPORT CONTROLS -->
+  <div id="center-transport">
+    <button class="primary" id="btnRec" style="padding: 10px 20px; font-size: 13px;">● Начать (Пробел)</button>
+    <button class="btn-rec-save btn-icon" id="btnStopSave" style="padding: 10px 18px; font-size: 13px;" title="Остановить запись и сохранить ролик (Enter)">
+      <svg viewBox="0 0 16 16" fill="currentColor"><rect x="3" y="3" width="10" height="10" rx="2"/></svg>
+      <span>Стоп и сохранить (Enter)</span>
+    </button>
+    <button class="btn-rec-discard" id="btnStopDiscard" style="padding: 10px 14px; font-size: 12px;" title="Остановить и удалить дубль (Esc)">✕ Сбросить</button>
+    <button id="btnRehearse" title="Репетиция без записи (P)">Репетиция</button>
+    <button id="btnToggleSafe" class="btn-icon" title="Показать зоны Reels и TikTok (G)">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="1.5" width="8" height="13" rx="1.8"/><line x1="6.5" y1="12" x2="9.5" y2="12"/></svg>
+      <span>Зоны Reels</span>
+    </button>
+    <button id="btnOpenFolder" class="btn-folder btn-icon" title="Открыть папку с видео в Finder">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M1.8 4.2A1.2 1.2 0 0 1 3 3h3l1.3 1.4H13a1.2 1.2 0 0 1 1.2 1.2v6.6a1.2 1.2 0 0 1-1.2 1.2H3a1.2 1.2 0 0 1-1.2-1.2V4.2Z"/></svg>
+      <span>Папка с видео</span>
+    </button>
+    <button id="btnHelp" title="Краткое обучение: как пользоваться суфлёром">? Обучение</button>
+  </div>
+</main>
+
+<!-- RIGHT PANEL: CONTROLS & TAKES -->
+<aside id="right" class="side">
+  <h2>Как едет текст</h2>
+  <div class="seg" id="modes">
+    <button data-m="classic">Скорость</button>
+    <button data-m="voice">Голос</button>
+    <button data-m="words">Слова</button>
+  </div>
+  <div class="hint" id="modeHint"></div>
+
+  <label>Скорость <span class="val" id="vSpeed"></span></label>
+  <input type="range" id="rSpeed" min="0.5" max="6" step="0.25">
+
+  <div class="presets">
+    <button type="button" data-preset="normal" title="Стандартный темп для Reels">Обычный</button>
+    <button type="button" data-preset="slow" title="Крупный шрифт и спокойная подача">Медленно</button>
+    <button type="button" data-preset="glass" title="Отзеркаленный текст для стекла-суфлёра">Под стекло</button>
+  </div>
+
+  <label class="chk" style="margin-top:8px">
+    <input type="checkbox" id="chkCmd"> Голосовые команды
+  </label>
+  <div class="hint">«Мотор» — запись · «Стоп» — пауза/выбор · «Снято» — сохранить · «Заново» — переснять</div>
+  <div id="sensBox" style="display:none">
+    <label>Чувствительность к голосу <span class="val" id="vSens"></span></label>
+    <input type="range" id="rSens" min="0" max="100" step="1">
+  </div>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;">
+    <h2>Камера и звук</h2>
+    <button id="btnRefreshDevs" type="button" style="font-size:10px;padding:3px 7px;" title="Найти подключённый iPhone, Android или веб-камеру">↻ Обновить</button>
+  </div>
+  <label>Камера</label><select id="selCam"></select>
+  <label>Микрофон</label><select id="selMic"></select>
+  <label class="chk"><input type="checkbox" id="chkMirror" checked> Зеркалить превью (видео пишется нормально)</label>
+  <label class="chk"><input type="checkbox" id="chkGrid"> Сетка третей</label>
+  <label class="chk"><input type="checkbox" id="chkNoise" checked> Шумодав микрофона</label>
+
+  <details class="sec-details" style="margin-top:4px">
+    <summary>Как подключить телефон / веб-камеру</summary>
+    <div class="sec-body hint" style="padding-top:4px;line-height:1.5;">
+      <b>iPhone (Type-C или Wi-Fi):</b> подключи кабель (или держи рядом) и включи на iPhone <i>Настройки → Основные → AirPlay и Непрерывность → Непрерывная камера</i>. Нажми <b>↻ Обновить</b> и выбери iPhone в списке.<br><br>
+      <b>Android по Type-C:</b> подключи кабель, опусти шторку → нажми на уведомление USB → выбери <b>«Веб-камера»</b> (Android 14+) либо используй <i>Camo / DroidCam</i>, затем нажми <b>↻ Обновить</b>.<br><br>
+      <b>USB веб-камера:</b> подключи к Mac и нажми <b>↻ Обновить</b>.
+    </div>
+  </details>
+
+  <details class="sec-details" style="margin-top:6px">
+    <summary>Тонкая настройка суфлёра</summary>
+    <div class="sec-body">
+      <label>Размер текста <span class="val" id="vFs"></span></label><input type="range" id="rFs" min="22" max="90" step="1">
+      <label>Ширина колонки <span class="val" id="vPw"></span></label><input type="range" id="rPw" min="300" max="900" step="10">
+      <label>Высота окна суфлёра <span class="val" id="vPh"></span></label><input type="range" id="rPh" min="18" max="60" step="1">
+      <label>Линия чтения <span class="val" id="vRl"></span></label><input type="range" id="rRl" min="5" max="70" step="1">
+      <label>Отсчёт перед записью <span class="val" id="vCd"></span></label><input type="range" id="rCd" min="0" max="5" step="1">
+      <label class="chk"><input type="checkbox" id="chkFlip"> Отразить текст (для стекла-суфлёра)</label>
+    </div>
+  </details>
+
+  <h2 style="margin-top:8px">Папка с видео и дубли</h2>
+  <div class="row" style="margin-bottom:4px">
+    <button class="btn-folder btn-icon" id="btnOpenFinderRight" style="width:100%;justify-content:center;">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M1.8 4.2A1.2 1.2 0 0 1 3 3h3l1.3 1.4H13a1.2 1.2 0 0 1 1.2 1.2v6.6a1.2 1.2 0 0 1-1.2 1.2H3a1.2 1.2 0 0 1-1.2-1.2V4.2Z"/></svg>
+      <span>Открыть в Finder</span>
+    </button>
+  </div>
+  <div class="dir-pill" id="dirPill" title="Нажмите, чтобы открыть папку в Finder">~/Movies/Суфлёр</div>
+  <div id="takes" style="margin-top:4px"><div class="hint" id="noTakes">Пока нет записей</div></div>
+  <div class="hint" id="outInfo" style="margin-top:2px"></div>
+
+  <details class="sec-details" style="margin-top:4px">
+    <summary>Пульт с телефона (QR)</summary>
+    <div class="sec-body" style="padding-top:6px">
+      <button id="btnQr" style="width:100%">Показать QR-код</button>
+      <div id="qr"></div><div id="qrUrl"></div>
+    </div>
+  </details>
+</aside>
+
+<!-- ONBOARDING / QUICK START MODAL -->
+<div id="onboarding">
+  <div class="ob-box">
+    <div class="ob-head">
+      <div>
+        <div class="ob-title">Как записать ролик за 1 минуту</div>
+        <div class="ob-sub">Короткая шпаргалка по Суфлёру 9:16 Studio</div>
+      </div>
+      <button id="obClose" style="padding:5px 10px">✕</button>
+    </div>
+    <div class="ob-steps">
+      <div class="ob-step">
+        <div class="ob-num">1</div>
+        <div>
+          <div class="ob-step-title">Добавь текст слева</div>
+          <div class="ob-step-desc">Перетащи файл <code>.txt</code> / <code>.md</code> или вставь текст в редактор. Нажми <b>«Разбить на строки»</b>, чтобы фразы шли короткими порциями по 3–5 слов.</div>
+        </div>
+      </div>
+      <div class="ob-step">
+        <div class="ob-num">2</div>
+        <div>
+          <div class="ob-step-title">Смотри прямо в камеру</div>
+          <div class="ob-step-desc">Текст бежит у самого верха экрана — взгляд всегда в объектив. Включи режим <b>«Голос»</b> (текст ждёт твоих пауз) или <b>«Слова»</b> (идёт за тобой слово в слово).</div>
+        </div>
+      </div>
+      <div class="ob-step">
+        <div class="ob-num">3</div>
+        <div>
+          <div class="ob-step-title">Нажми «Начать» и забери готовый 9:16</div>
+          <div class="ob-step-desc">Кнопка <b>Начать</b> (или команда «Мотор») запускает запись, а <b>Стоп и сохранить</b> (<code>Enter</code>) сразу режет ролик в вертикаль 1080×1920 и кладёт в <code>~/Movies/Суфлёр</code>.</div>
+        </div>
+      </div>
+    </div>
+    <div class="ob-foot">
+      <button id="obTryDemo">Вставить учебный текст</button>
+      <button class="primary" id="obDone">Понятно, погнали</button>
+    </div>
+  </div>
+</div>
+
+<script src="qrcode.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

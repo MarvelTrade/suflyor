@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0b0b0d">
+<title>Пульт суфлёра</title>
+<style>
+  :root{--bg:#0b0b0d;--panel:#16161b;--line:#2a2a31;--text:#f2f2f4;--dim:#8a8a94;--accent:#ffd23f;--rec:#ff3b30;--ok:#34c759}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.35 -apple-system,system-ui,sans-serif;-webkit-user-select:none;user-select:none}
+  body{padding:max(16px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom));min-height:100dvh;display:flex;flex-direction:column;gap:12px}
+  .status{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;align-items:center;gap:12px}
+  .dot{width:16px;height:16px;border-radius:50%;background:#555;flex:none}
+  .rec .dot{background:var(--rec);animation:b 1s infinite}
+  @keyframes b{50%{opacity:.3}}
+  .time{font-size:30px;font-weight:700;font-variant-numeric:tabular-nums}
+  .sub{color:var(--dim);font-size:13px}
+  .bar{height:5px;background:#000;border-radius:3px;overflow:hidden;margin-top:6px}
+  .bar i{display:block;height:100%;width:0;background:var(--accent)}
+  button{font:inherit;color:inherit;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px 8px;font-weight:600;touch-action:manipulation}
+  button:active{transform:scale(.97);opacity:.85}
+  .big{background:var(--rec);border-color:var(--rec);font-size:22px;padding:26px 8px;color:#fff}
+  .rec .big{background:var(--accent);border-color:var(--accent);color:#111}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+  .save{background:#123d1f;border-color:#1f6b35}
+  .discard{background:#3d1212;border-color:#6b1f1f}
+  .seg{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:3px;gap:3px}
+  .seg button{flex:1;border:0;padding:10px 4px;border-radius:11px;font-size:14px;background:transparent}
+  .seg button.on{background:var(--accent);color:#111}
+  select{width:100%;font:inherit;color:inherit;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px}
+  .off{position:fixed;inset:0;background:#000d;display:none;align-items:center;justify-content:center;text-align:center;padding:30px;color:var(--dim)}
+  h3{margin:6px 0 0;font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em}
+</style>
+</head>
+<body>
+  <div class="status" id="status">
+    <div class="dot"></div>
+    <div style="flex:1">
+      <div class="time" id="time">00:00</div>
+      <div class="sub" id="sub">подключаюсь…</div>
+      <div class="bar"><i id="bar"></i></div>
+    </div>
+  </div>
+
+  <button class="big" id="main" data-cmd="toggle">● Запись</button>
+  <div class="grid">
+    <button class="save" data-cmd="save">■ Сохранить</button>
+    <button class="discard" data-cmd="discard">✕ Выбросить</button>
+  </div>
+
+  <h3>Текст</h3>
+  <div class="grid3">
+    <button data-cmd="back">↑ Назад</button>
+    <button data-cmd="home">⤒ Начало</button>
+    <button data-cmd="fwd">↓ Вперёд</button>
+  </div>
+  <div class="grid3">
+    <button data-cmd="slower">− Медл.</button>
+    <button data-cmd="rehearse">▶ Репет.</button>
+    <button data-cmd="faster">+ Быстр.</button>
+  </div>
+  <div class="seg" id="modes">
+    <button data-m="classic">Скорость</button><button data-m="voice">Голос</button><button data-m="words">Слова</button>
+  </div>
+
+  <h3>Сценарий</h3>
+  <select id="script"></select>
+
+  <div class="off" id="off">Нет связи с суфлёром.<br>Проверь, что Суфлёр открыт на Маке и телефон в той же Wi-Fi сети.</div>
+
+<script>
+  const K = new URLSearchParams(location.search).get("k") || "";
+  const $ = (id) => document.getElementById(id);
+  const send = (obj) => fetch("/api/cmd?k=" + encodeURIComponent(K), { method: "POST", body: JSON.stringify(obj) })
+    .then(() => navigator.vibrate && navigator.vibrate(15)).catch(() => {});
+  document.querySelectorAll("[data-cmd]").forEach((b) => b.addEventListener("click", () => send({ cmd: b.dataset.cmd })));
+  document.querySelectorAll("#modes button").forEach((b) => b.addEventListener("click", () => send({ cmd: "mode", mode: b.dataset.m })));
+  $("script").addEventListener("change", (e) => send({ cmd: "script", file: e.target.value }));
+  const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+  let lastList = "";
+  async function poll() {
+    try {
+      const r = await fetch("/api/state?k=" + encodeURIComponent(K), { cache: "no-store" });
+      if (!r.ok) throw 0;
+      const s = await r.json();
+      $("off").style.display = "none";
+      document.body.classList.toggle("rec", !!s.rec);
+      $("time").textContent = fmt(s.secs || 0);
+      $("sub").textContent = s.pending ? "дубль ждёт: «Сохранить» или «Выбросить»" : s.counting ? "отсчёт…" : s.saving ? "сохраняю дубль…" :
+        (s.rec ? (s.running ? "идёт запись" : "запись · текст на паузе") : (s.running ? "репетиция" : "готов")) +
+        " · осталось ~" + fmt(s.left || 0) + " · " + (s.wps || 0) + " сл/с";
+      $("bar").style.width = ((s.progress || 0) * 100) + "%";
+      $("main").textContent = s.rec ? (s.running ? "⏸ Пауза текста" : "▶ Продолжить текст") : "● Запись";
+      document.querySelectorAll("#modes button").forEach((b) => b.classList.toggle("on", b.dataset.m === s.mode));
+      const list = JSON.stringify(s.scripts || []);
+      if (list !== lastList) {
+        lastList = list; $("script").innerHTML = "";
+        (s.scripts || []).forEach((f) => { const o = document.createElement("option"); o.value = f; o.textContent = f.replace(/\.(txt|md)$/i, ""); $("script").appendChild(o); });
+      }
+      $("script").value = s.script || "";
+    } catch { $("off").style.display = "flex"; }
+    setTimeout(poll, 600);
+  }
+  poll();
+</script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+.DS_Store
+*.pyc
+__pycache__/
+*.bak
+build/
+dist/
+*.dmg
+Суфлёр.app/
+.remote_key
+суфлёр.log
+исходники/
+*.mp4
+*.mov
+*.webm
